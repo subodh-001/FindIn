@@ -8,6 +8,8 @@ import reportRoutes from './routes/reports';
 import commentRoutes from './routes/comments';
 import { connectToDatabase } from './config/mongo';
 import { backgroundJobService } from './services/backgroundJobs';
+import verificationRoutes from './routes/verification';
+import inviteRoutes from './routes/invites';
 
 dotenv.config();
 
@@ -46,6 +48,8 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/verification', verificationRoutes);
+app.use('/api/invites', inviteRoutes);
 
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('[server] unhandled error', err);

@@ -18,7 +18,8 @@ export interface UserProfile {
   userType: string;
   isVerified: boolean;
   verificationStatus: VerificationStatus;
-  idDocumentPath?: string | null;
+  idDocumentId?: string | null;
+  twoFactorEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,7 +28,12 @@ interface AuthContextType {
   user: UserProfile | null;
   userProfile: UserProfile | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  sessionToken: string | null;
+  login: (
+    email: string,
+    password: string,
+    options?: { twoFactorCode?: string }
+  ) => Promise<{ success: boolean; requiresTwoFactor?: boolean; error?: string }>;
   register: (email: string, password: string, userData: any) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
@@ -64,15 +70,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, options?: { twoFactorCode?: string }) => {
     try {
       const response = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          twoFactorCode: options?.twoFactorCode,
+        }),
       });
 
       const result = await response.json();
+
+      if (result.requiresTwoFactor) {
+        return { success: false, requiresTwoFactor: true, error: 'Two-factor authentication required' };
+      }
 
       if (!response.ok || !result.success || !result.user || !result.sessionToken) {
         return { success: false, error: result.error || 'Login failed' };
@@ -132,6 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     userProfile,
     loading,
+    sessionToken,
     login,
     register,
     logout,

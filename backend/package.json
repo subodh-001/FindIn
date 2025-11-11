@@ -5,13 +5,15 @@
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec \"node --env-file=.env -r ts-node/register ./src/index.ts\"",
     "build": "tsc",
-    "start": "node --env-file=.env build/index.js"
+    "start": "node --env-file=.env build/index.js",
+    "lint": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@sendgrid/mail": "^8.1.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -20,6 +22,9 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.0.0",
     "morgan": "^1.10.1",
+    "multer": "^2.0.0",
+    "speakeasy": "^2.0.0",
+    "twilio": "^4.19.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -27,7 +32,9 @@
     "@types/express": "^5.0.5",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.0.0",
     "@types/node": "^24.10.0",
+    "@types/speakeasy": "^2.0.10",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

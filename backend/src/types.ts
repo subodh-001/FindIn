@@ -27,7 +27,15 @@ export interface UserDocument {
   userType: UserRole;
   isVerified: boolean;
   verificationStatus: VerificationStatus;
-  idDocumentPath?: string | null;
+  verificationNotes?: string | null;
+  idDocumentId?: ObjectId | null;
+  twoFactorEnabled?: boolean;
+  twoFactorSecret?: string | null;
+  preferredChannels?: {
+    sms: boolean;
+    email: boolean;
+    push: boolean;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -66,6 +74,12 @@ export interface ReportDocument {
   updatedAt: Date;
   resolvedAt?: Date | null;
   lastRadiusExpand?: Date | null;
+  radiusHistory?: Array<{
+    radius: number;
+    expandedAt: Date;
+    expandedBy: 'SYSTEM' | 'ADMIN';
+    reason?: string | null;
+  }>;
 }
 
 export interface CommentDocument {
@@ -91,5 +105,39 @@ export interface NotificationDocument {
   isRead: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface AuditLogDocument {
+  _id?: ObjectId;
+  actorId: string;
+  action: string;
+  entityType: 'USER' | 'REPORT' | 'COMMENT' | 'SYSTEM';
+  entityId?: string | null;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+}
+
+export interface InviteDocument {
+  _id?: ObjectId;
+  email: string;
+  role: UserRole;
+  createdBy: string;
+  expiresAt: Date;
+  redeemedAt?: Date | null;
+  token: string;
+  message?: string | null;
+}
+
+export interface AbuseReportDocument {
+  _id?: ObjectId;
+  reportId: string;
+  reporterId: string;
+  reason: string;
+  details?: string | null;
+  status: 'OPEN' | 'REVIEWED' | 'DISMISSED';
+  createdAt: Date;
+  reviewedAt?: Date | null;
+  reviewedBy?: string | null;
+  resolutionNotes?: string | null;
 }
 

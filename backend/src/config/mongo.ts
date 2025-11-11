@@ -1,7 +1,8 @@
-import { MongoClient, Db, Collection, ServerApiVersion, Document } from 'mongodb';
+import { MongoClient, Db, Collection, ServerApiVersion, Document, GridFSBucket } from 'mongodb';
 
 let mongoClient: MongoClient | undefined;
 let database: Db | undefined;
+let gridFsBucket: GridFSBucket | undefined;
 
 export async function connectToDatabase(uri: string) {
   if (database) {
@@ -18,6 +19,9 @@ export async function connectToDatabase(uri: string) {
 
   await mongoClient.connect();
   database = mongoClient.db('finding_her');
+  gridFsBucket = new GridFSBucket(database, {
+    bucketName: 'uploads',
+  });
 
   process.on('SIGINT', async () => {
     await mongoClient?.close();
@@ -37,5 +41,12 @@ export function getDb(): Db {
 
 export function getCollection<T extends Document = Document>(name: string): Collection<T> {
   return getDb().collection<T>(name);
+}
+
+export function getBucket(): GridFSBucket {
+  if (!gridFsBucket) {
+    throw new Error('GridFS bucket not initialized');
+  }
+  return gridFsBucket;
 }
 

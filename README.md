@@ -17,12 +17,13 @@ Documentation on the full file structure lives in [`docs/STRUCTURE.md`](docs/STR
 
 ## 🔑 Core capabilities
 
-- Government ID verification + admin approval keeps reports authentic
-- Categorised reports (Lost Person, Criminal Activity, Traffic, Animal Welfare, Environmental)
-- Automatic search-radius expansion (every 24 hours) with targeted notifications
-- Community sightings with photos, locations, and notes
-- Admin console to approve users, moderate content, and monitor success metrics
-- Web + mobile parity (web UI in this repo, mobile app planned via React Native)
+- Verified onboarding (citizens, responders, admins) with moderation workflow, ID document review, and audit logging
+- Categorised reports (Lost Persons, Women’s Safety, Senior Citizens, Criminal Activity, Environmental alerts)
+- Automatic search-radius expansion with location-aware notifications (Twilio SMS + SendGrid email fan-out)
+- Community sightings with geo-tagged photos, notes, report-abuse handling, and confidence scoring roadmap
+- Admin console to approve users, triage reports, review ID proofs, issue responder invites, and monitor metrics
+- Admin 2FA enrolment (TOTP) for high-privilege accounts
+- Responsive web UI (this repo) with upcoming React Native field app
 
 ---
 
@@ -48,7 +49,7 @@ Documentation on the full file structure lives in [`docs/STRUCTURE.md`](docs/STR
 ### 1. Clone the repository
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/subodh-001/FindIn.git
 cd FindIn
 ```
 
@@ -58,6 +59,7 @@ cd FindIn
 cd backend
 cp .env.example .env                 # fill with real secrets if needed
 npm install
+npm run lint                         # type-checks
 npm run dev                          # http://localhost:4000
 ```
 
@@ -67,6 +69,13 @@ Key environment variables:
 MONGODB_URI=...
 JWT_SECRET=...
 PORT=4000
+
+# 2FA, notifications, and communications
+TWILIO_ACCOUNT_SID=...
+TWILIO_AUTH_TOKEN=...
+TWILIO_FROM_NUMBER=+91XXXXXXXXXX
+SENDGRID_API_KEY=...
+SENDGRID_FROM_EMAIL=alerts@findin.in
 ```
 
 ### 3. Frontend setup
@@ -75,10 +84,20 @@ PORT=4000
 cd ../frontend
 cp .env.example .env.local           # optional: override NEXT_PUBLIC_API_BASE_URL
 npm install
+npm run lint
 npm run dev                          # http://localhost:3000
 ```
 
 Ensure `NEXT_PUBLIC_API_BASE_URL` points at the backend (default `http://localhost:4000`).
+
+### 4. Linting & tests (WIP)
+
+- Backend: `npm run lint` runs TypeScript in `--noEmit` mode. Add Jest tests under `backend/src/__tests__`.
+- Frontend: `npm run lint` uses Next.js ESLint defaults. Playwright tests will live under `frontend/tests` (coming soon).
+
+### 5. Staging deployment (WIP)
+
+The pilot playbook (`docs/PILOT_ROADMAP.md`) documents the work required to bring up a staging environment with encrypted storage, audit logging, and partner integrations.
 
 ---
 
@@ -108,15 +127,22 @@ docs/
 
 ---
 
-## 🛣️ Delivery roadmap (high-level)
+## 🛣️ Delivery roadmap
 
-1. **Backend foundation** – Express routes, MongoDB models, JWT auth ✅
-2. **Verification workflow** – ID uploads, admin approvals (in progress)
-3. **Radius automation** – Background jobs + notification fan-out ✅
-4. **Web experience** – Reports feed, detail pages, report creation ✅
-5. **Mobile app** – React Native client with camera + push notifications (planned)
-6. **Admin console** – Moderation + analytics UI (planned)
-7. **Deployment** – CI/CD (Vercel for frontend, Render/Heroku/AWS for backend) (planned)
+1. **Phase 0 – Foundations** ✅  
+   Code audit, pilot scope, environment scaffolding, lint/test baselines. See `docs/PILOT_ROADMAP.md`.
+2. **Phase 1 – Pilot slice** ✅  
+   Verified missing-person workflow, document uploads (MongoDB GridFS), admin review queue, responder invites, two-factor auth, automated radius alerts with SMS/email fan-out.
+3. **Phase 2 – Community intelligence**  
+   Sighting moderation, photo metadata, trust scoring, Socket.IO powered live updates.
+4. **Phase 3 – Partner integrations**  
+   Public APIs, webhooks, React Native responder app with offline capture.
+5. **Phase 4 – Evidence & trust**  
+   Analytics dashboards, privacy/compliance centre, volunteer training hub.
+6. **Phase 5 – Platform hardening**  
+   Automated tests, IaC, observability, performance tuning, disaster recovery drills.
+
+Each phase should be piloted in one city before city-wide expansion.
 
 ---
 
@@ -131,6 +157,7 @@ docs/
 
 ## 📬 Support
 
-Have questions or suggestions? Open an issue in the repository or start a discussion.
+- Pilot coordination: reach out via issues or discussions for access to the pilot toolkit.
+- Feature requests and bug reports: open an issue with steps and screenshots.
 
 Together we can make Indian neighbourhoods safer—**FindIn**.

@@ -70,6 +70,14 @@ export class BackgroundJobService {
               lastRadiusExpand: now,
               updatedAt: now,
             },
+            $push: {
+              radiusHistory: {
+                radius: newRadius,
+                expandedAt: now,
+                expandedBy: 'SYSTEM',
+                reason: 'Automatic scheduled expansion',
+              },
+            },
           }
         );
 

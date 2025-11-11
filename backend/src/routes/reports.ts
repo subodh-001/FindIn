@@ -2,9 +2,16 @@ import { Router } from 'express';
 import { ObjectId } from 'mongodb';
 import { z } from 'zod';
 import { getCollection } from '../config/mongo';
-import { CommentDocument, ReportDocument, UserDocument } from '../types';
+import {
+  CommentDocument,
+  ReportDocument,
+  UserDocument,
+  AuditLogDocument,
+  AbuseReportDocument,
+} from '../types';
 import { serializeComment, serializeReport, serializeUser } from '../utils/serializers';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
+import { notifyReportCreated } from '../services/notificationService';
 
 const router = Router();
 
@@ -154,10 +161,20 @@ router.post('/', async (req, res) => {
       updatedAt: now,
       resolvedAt: null,
       lastRadiusExpand: now,
+      radiusHistory: [
+        {
+          radius: Number(payload.initialRadius) || 5,
+          expandedAt: now,
+          expandedBy: 'SYSTEM',
+          reason: 'Initial radius',
+        },
+      ],
     };
 
     const { insertedId } = await reportsCollection.insertOne(report);
     report._id = insertedId;
+
+    await notifyReportCreated(report);
 
     return res.status(201).json({
       success: true,
@@ -177,7 +194,7 @@ router.post('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const reportsCollection = getCollection<ReportDocument>('reports');
     const commentsCollection = getCollection<CommentDocument>('comments');
     const usersCollection = getCollection<UserDocument>('users');
@@ -250,9 +267,9 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.put('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
+router.put('/:id', authenticate, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const payload = updateStatusSchema.parse(req.body);
     const reportsCollection = getCollection<ReportDocument>('reports');
 
@@ -295,6 +312,70 @@ router.put('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
     }
     console.error('[reports] update failed', error);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+const abuseSchema = z.object({
+  reason: z.string().min(1),
+  details: z.string().optional(),
+});
+
+router.post('/:id/abuse', authenticate, async (req, res) => {
+  const authReq = req as AuthenticatedRequest;
+  try {
+    const idParam = req.params.id;
+    if (typeof idParam !== 'string' || !ObjectId.isValid(idParam)) {
+      return res.status(400).json({ success: false, error: 'Invalid report id' });
+    }
+    const id = idParam;
+
+    if (!authReq.userId) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+
+    const reporterId = authReq.userId as string;
+    const payload = abuseSchema.parse(req.body);
+    const reportsCollection = getCollection<ReportDocument>('reports');
+    const report = await reportsCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!report) {
+      return res.status(404).json({ success: false, error: 'Report not found' });
+    }
+
+    const abusesCollection = getCollection<AbuseReportDocument>('report_abuse');
+    const now = new Date();
+
+    const abuseEntry: AbuseReportDocument = {
+      reportId: id,
+      reporterId,
+      reason: payload.reason,
+      details: payload.details ?? null,
+      status: 'OPEN',
+      createdAt: now,
+    };
+
+    await abusesCollection.insertOne(abuseEntry);
+
+    const auditCollection = getCollection<AuditLogDocument>('audit_logs');
+    await auditCollection.insertOne({
+      actorId: reporterId,
+      action: 'REPORT_ABUSE',
+      entityType: 'REPORT',
+      entityId: id ?? null,
+      metadata: {
+        reason: payload.reason,
+        details: payload.details ?? null,
+      },
+      createdAt: now,
+    });
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('[reports] abuse report failed', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ success: false, error: error.issues.map((issue) => issue.message).join(', ') });
+    }
+    return res.status(500).json({ success: false, error: 'Failed to submit abuse report' });
   }
 });
 

@@ -3,11 +3,13 @@ import { ReportDocument, UserDocument, CommentDocument } from '../types';
 export function serializeUser(user: UserDocument | null | undefined) {
   if (!user) return null;
 
-  const { password, ...rest } = user;
+  const { password, twoFactorSecret, ...rest } = user;
 
   return {
     ...rest,
     _id: user._id,
+    idDocumentId: user.idDocumentId ? user.idDocumentId.toString() : null,
+    twoFactorEnabled: Boolean(user.twoFactorEnabled),
     createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
     updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt,
   };

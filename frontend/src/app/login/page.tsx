@@ -17,6 +17,8 @@ export default function LoginPage() {
     email: "",
     password: "",
   });
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false);
   const [loading, setLoading] = useState(false);
   
   const { login } = useAuth();
@@ -27,11 +29,20 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password, {
+        twoFactorCode: twoFactorRequired ? twoFactorCode : undefined,
+      });
       
       if (result.success) {
         toast.success("Login successful! Welcome to CommunityGuard");
         router.push("/");
+        return;
+      }
+
+      if (result.requiresTwoFactor) {
+        setTwoFactorRequired(true);
+        toast.info("Enter the 6-digit code from your authenticator app");
+        return;
       } else {
         toast.error(result.error || "Login failed");
       }
@@ -118,6 +129,25 @@ export default function LoginPage() {
                 </Button>
               </div>
             </div>
+            {twoFactorRequired && (
+              <div className="space-y-3">
+                <Label htmlFor="twoFactor" className="text-lg font-black text-slate-700">
+                  Two-Factor Code
+                </Label>
+                <Input
+                  id="twoFactor"
+                  name="twoFactor"
+                  type="text"
+                  placeholder="Enter 6-digit code"
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value)}
+                  maxLength={6}
+                  disabled={loading}
+                  required
+                  className="border-3 border-slate-200 focus:border-blue-500 focus:ring-blue-500 h-16 text-xl rounded-2xl transition-all duration-500 shadow-lg hover:shadow-xl bg-white/80 backdrop-blur-sm tracking-widest text-center"
+                />
+              </div>
+            )}
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white h-16 text-xl font-black rounded-2xl shadow-2xl hover:shadow-3xl transform hover:-translate-y-2 transition-all duration-500" 
